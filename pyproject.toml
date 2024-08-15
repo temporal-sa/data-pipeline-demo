@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "data-pipeline-demo"
+version = "0.1.0"
+description = ""
+authors = ["Joshua Smith <joshmsmith@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+temporalio = "^1.6.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
