@@ -12,11 +12,11 @@ Prerequisites:
 * [Local Temporal server running](https://docs.temporal.io/cli/server#start-dev) or [Temporal Cloud](https://cloud.temporal.io/)
 * Set Environment
 ```
-    TEMPORAL_HOST_URL=helloworld.sdvdw.tmprl.cloud:7233
-    TEMPORAL_MTLS_TLS_KEY=/Users/ktenzer/certs/ca.key
-    TEMPORAL_MTLS_TLS_CERT=/Users/ktenzer/certs/ca.pem
-    TEMPORAL_TASK_QUEUE=data-pipeline
-    TEMPORAL_NAMESPACE=helloworld.sdvdw
+TEMPORAL_HOST_URL=helloworld.sdvdw.tmprl.cloud:7233
+TEMPORAL_MTLS_TLS_KEY=/Users/ktenzer/certs/ca.key
+TEMPORAL_MTLS_TLS_CERT=/Users/ktenzer/certs/ca.pem
+TEMPORAL_TASK_QUEUE=data-pipeline
+TEMPORAL_NAMESPACE=helloworld.sdvdw
 ```
 
 With this repository cloned, run the following at the root of the directory:
