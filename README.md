@@ -31,3 +31,5 @@ sample:
 
     $ poetry run python worker.py
     $ cd ui; poetry run python app.py
+
+UI should be available at [http://localhost:5000](http://localhost:5000)
