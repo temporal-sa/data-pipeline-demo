@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0px auto;
+            padding: 0px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;  /* light gray background for headers */
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+            background-color: #f9f9f9;  /* light gray background for all rows */
+        }        
+
+        select {
+            width: 100%;
+            padding: 10px;
+        }
+
+        button {
+            padding: 10px;
+            background-color: #000000;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+    <script>
+        function runJob() {
+            document.getElementById('orderForm').submit();
+        }
+    </script>    
+</head>
+<body>
+    <h2>Temporal Data Pipeline</h1>
+
+    <section>
+        <h3>Data Format</h2>
+        <table>
+            <tr>
+                <td>Input Filename</td>
+                <td>{{ data['input_filename'] }}</td>
+            </tr>
+            <tr>
+                <td>Folder Name</td>
+                <td>{{ data['foldername'] }}</td>
+            </tr>
+            <tr>
+                <td>Poll or Wait</td>
+                <td>{{ data['poll_or_wait'] }}</td>
+            </tr>
+            <tr>
+                <td>Validation</td>
+                <td>{{ data['validation'] }}</td>
+            </tr>                  
+        </table>
+    </section>
+
+    <section>
+        <h2>Choose Scenario</h2>
+        <select id="scenario" name="scenario">
+            {% for choice in scenarios %}
+                <option value="{{ choice }}">{{ choice }}</option>
+            {% endfor %}
+        </select>        
+    </section>
+
+    <section>
+        <button type="button" onclick="runJob()">Run Job</button>
+    </section>
+
+    <section>
+        <input type="hidden" id="job_id" value="{{ job_id }}">
+    </section>
+    
+    <script>
+        function runJob() {
+            // Get the selected scenario
+            var selectedScenario = document.getElementById('scenario').value;
+
+            // Get the job_id
+            var job_id = document.getElementById('job_id').value;
+
+            // Redirect to job processing page with the selected scenario as a query parameter
+            window.location.href = '/run_job?scenario=' + encodeURIComponent(selectedScenario) + '&job_id=' + encodeURIComponent(job_id);
+        }
+    </script>
+</body>
+
+{% endblock %}

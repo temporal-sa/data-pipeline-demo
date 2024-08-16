@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirmation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0px auto;
+            padding: 0px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;  /* light gray background for headers */
+        }
+        button {
+            padding: 10px;
+            background-color: #000000;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }        
+    </style>
+    <script>
+        function reloadMainPage() {
+            window.location.href = '/';
+        }
+    </script>   
+</head>
+<body>
+    <h2>Job Completed</h1>
+
+    <table>
+        <tr>
+            <th>Job ID</th>
+            <td>{{ job_id }}</td>
+        </tr>     
+    </table>
+    <button onclick="reloadMainPage()">New Job</button>
+</body>
+
+{% endblock %}

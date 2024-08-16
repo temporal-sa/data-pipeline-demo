@@ -1,0 +1,259 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Processing</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0px auto;
+            padding: 0px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        .status-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #f2f2f2;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .status-progress {
+            height: 100%;
+            background-color: #4CAF50;
+        }
+        button {
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }           
+    </style>
+    <script>
+        // Declare interval in the global scope
+        var interval;
+
+        // Define the startCountdown function
+        function startCountdown(seconds, countdownElement) {
+            function updateCountdown() {
+                countdownElement.innerText = seconds + ' seconds remaining';
+                seconds = seconds -5;
+
+                if (seconds < 0) {
+                    clearInterval(interval);
+                    countdownElement.style.display = 'none';
+                }
+            }
+
+            // Set up interval to call updateCountdown every second
+            interval = setInterval(updateCountdown, 5000);
+        }
+        
+        function startCountdown(seconds, countdownElement) {
+            function updateCountdown() {
+                countdownElement.innerText = seconds + ' seconds remaining';
+                seconds--;
+
+                if (seconds < 0) {
+                    clearInterval(interval);
+                    countdownElement.style.display = 'none';
+                }
+            }
+
+            // Set up interval to call updateCountdown every second
+            interval = setInterval(updateCountdown, 1000);
+        }        
+
+        // Define the updateScenarioElements function
+        isCountdown = false;
+        function updateScenarioElements(selectedScenario, progress) {
+            // Get the elements for HumanInLoopSignal and HumanInLoopUpdate scenarios
+            var signalElement = document.getElementById('humanInLoopSignal');
+            var updateElement = document.getElementById('humanInLoopUpdate');
+            var signalCountdownElement = document.getElementById('signalCountdown');
+            var updateCountdownElement = document.getElementById('updateCountdown');
+
+            // Hide all elements initially
+            signalElement.style.display = 'none';
+            updateElement.style.display = 'none';
+            signalCountdownElement.style.display = 'none';
+            updateCountdownElement.style.display = 'none';
+
+            // Check if the countdown is already active
+            var isCountdownActive = signalCountdownElement.style.display === 'block' || updateCountdownElement.style.display === 'block';
+
+            // Show elements based on the selected scenario and progress
+            if (selectedScenario === 'HumanInLoopSignal' && progress === 80 && !isCountdownActive) {
+                signalElement.style.display = 'block';
+                signalCountdownElement.style.display = 'block';
+                if (!isCountdown) {
+                    isCountdown = true;
+                    startCountdown(59, signalCountdownElement);  // Start 60 second countdown 
+                }
+            } else if (selectedScenario === 'HumanInLoopUpdate' && progress === 80 && !isCountdownActive) {
+                updateElement.style.display = 'block';
+                updateCountdownElement.style.display = 'block';
+                if (!isCountdown) {
+                    isCountdown = true;
+                    startCountdown(59, updateCountdownElement);  // Start 59 second countdown
+                }                
+            }
+        }        
+
+        // Define the updateProgress function
+        function updateProgress() {
+            // Get the job_id from the URL query parameters
+            var urlParams = new URLSearchParams(window.location.search);
+            var job_id = urlParams.get('job_id');
+            var selectedScenario = urlParams.get('scenario');
+
+            // Fetch progress from the server
+            fetch('/get_progress?job_id=' + encodeURIComponent(job_id))
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    } else {
+                        // If response status is not okay, throw an error
+                        throw new Error(`Failed to fetch progress. Status: ${response.status}`);
+                    }
+                })
+                .then(data => {
+                    // Update the progress bar
+                    document.getElementById('progress-bar').style.width = data.progress + '%';
+
+                    // Check if the progress is complete and redirect to order confirmation if needed
+                    if (data.progress === 100) {
+                        // Redirect to order confirmation with the job_id
+                        window.location.href = '/confirmation?job_id=' + encodeURIComponent(job_id);
+                    } else {
+                        // Continue updating progress
+                        setTimeout(updateProgress, 1000);
+                    }
+
+                    // Show/hide elements based on the selected scenario and progress
+                    updateScenarioElements(selectedScenario, data.progress);
+                })
+                .catch(error => {
+                    // Log the detailed error message to the console
+                    console.error('Error fetching progress:', error.message);
+
+                    // Display the error message in the web browser
+                    document.getElementById('error-message').innerText = error.message;
+
+                    // Handle the error by showing a red status bar
+                    document.getElementById('progress-bar').style.backgroundColor = 'red';
+                });
+        }    
+
+        // Start updating progress when the page loads
+        document.addEventListener("DOMContentLoaded", function () {
+            updateProgress();
+        });
+
+        // Define the signal function
+        function signal() {
+            // Get the job_id from the URL query parameters
+            var urlParams = new URLSearchParams(window.location.search);
+            var job_id = urlParams.get('job_id');
+            
+            // Perform AJAX request to the server for signaling
+            fetch('/signal?job_id=' + encodeURIComponent(job_id), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+            })
+            .then(response => {
+                if (response.ok) {
+                    console.log('Signal sent successfully');
+                } else {
+                    console.error('Failed to send signal');
+                }
+            })
+            .catch(error => {
+                console.error('Error during signal:', error.message);
+            });
+        }
+
+        // Define the update function
+        function update() {
+            // Get the job_id from the URL query parameters
+            var urlParams = new URLSearchParams(window.location.search);
+            var job_id = urlParams.get('job_id');
+
+            // Perform AJAX request to the server for updating
+            fetch('/update?job_id=' + encodeURIComponent(job_id), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    console.error('Failed to send update');
+                    throw new Error('Failed to send update');
+                }
+            })
+            .then(data => {
+                // Get the updateResult element
+                var updateResultElement = document.getElementById('updateResult');
+
+                // Update the display with the result
+                updateResultElement.innerText = data.result;
+
+                // Check if the result contains rejected and set text color
+                if (data.result.includes("rejected")) {
+                    updateResultElement.style.color = 'red';
+                } else {
+                    // Reset text color if not "rejected"
+                    updateResultElement.style.color = '';
+                }
+            })
+            .catch(error => {
+                console.error('Error during update:', error.message);
+            });
+        }   
+    </script>
+</head>
+
+<body>
+    <h2>Job Processing</h1>
+
+    <div class="status-bar">
+        <div id="progress-bar" class="status-progress" style="width: 0;"></div>
+    </div>
+
+    <p>Selected Scenario: {{ selected_scenario }}</p>
+
+    <!-- Elements for HumanInLoopSignal scenario -->
+    <div id="humanInLoopSignal" style="display: none;">
+        <button onclick="signal()">Signal Complete Load</button>
+        <p id="signalCountdown"></p>
+    </div>
+
+    <!-- Elements for HumanInLoopUpdate scenario -->
+    <div id="humanInLoopUpdate" style="display: none;">
+        <button onclick="update()">Update Complete Load</button>
+        <p id="updateCountdown"></p>
+    </div>      
+
+    <div id="updateResult"></div>
+    <p id="error-message" style="color: red;"></p> 
+</body>
+
+{% endblock %}

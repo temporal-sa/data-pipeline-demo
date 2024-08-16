@@ -1,12 +1,11 @@
 from pathlib import Path
 import random
-import subprocess
 import os
 import json
 import shutil
 
 from temporalio import activity
-from dataobjects import YourParams, DataPipelineParams
+from dataobjects import DataPipelineParams
 
 
 @activity.defn
@@ -55,13 +54,16 @@ async def load(input: DataPipelineParams) -> str:
 # it throws an exception 90% of the time (simulating "not found")
 # 10% of the time it simulates "found" and returns 
 @activity.defn
+async def poll_with_failure(input: DataPipelineParams) -> str:
+    if random.randint(1, 10) > 9 :
+        return "Poll successful: found"
+    raise Exception("Poll failed: not found")
+
+@activity.defn
 async def poll(input: DataPipelineParams) -> str:
     if random.randint(1, 10) > 9 :
         return "polled successfully: found"
     raise Exception("Simulate polled: not found")
-
-    
-
 
 def initialize(datafolder: str):    
     if(os.path.isfile(datafolder + "/working/" + "info.json")):
