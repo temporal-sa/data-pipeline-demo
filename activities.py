@@ -61,9 +61,8 @@ async def poll_with_failure(input: DataPipelineParams) -> str:
 
 @activity.defn
 async def poll(input: DataPipelineParams) -> str:
-    if random.randint(1, 10) > 9 :
-        return "polled successfully: found"
-    raise Exception("Simulate polled: not found")
+    return "polled successfully: found"
+
 
 def initialize(datafolder: str):    
     if(os.path.isfile(datafolder + "/working/" + "info.json")):
