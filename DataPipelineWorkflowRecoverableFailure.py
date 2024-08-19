@@ -49,7 +49,7 @@ class DataPipelineWorkflowRecoverableFailure:
         workflow.logger.info(f"Transform status: {input.input_filename}: {activity_output}")
 
         # Comment out to fix recoverable scenario
-        raise Exception("Workflow bug!")
+        #raise Exception("Workflow bug!")
 
         # Set progress to 60%
         self._progress = 60
