@@ -80,5 +80,5 @@ class DataPipelineWorkflowHumanInLoopUpdate:
         return "Workflow update successful"
 
     @workflow.query
-    def progress(self) -> KeyboardInterrupt:
+    def progress(self) -> int:
         return self._progress

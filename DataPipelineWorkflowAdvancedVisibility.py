@@ -78,5 +78,5 @@ class DataPipelineWorkflowAdvancedVisibility:
         return f"Successfully processed: {input.input_filename}!"
 
     @workflow.query
-    def progress(self) -> KeyboardInterrupt:
+    def progress(self) -> int:
         return self._progress
