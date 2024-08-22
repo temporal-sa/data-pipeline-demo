@@ -1,7 +1,25 @@
-# Data Pipeline example
+# Temporal Data Pipeline
+
+_Leveraging the Temporal Python SDK and Terraform_
+
+| Prerequisites      |    | Features       |    | Patterns            |    |
+|:-------------------|----|----------------|----|---------------------|----|
+| Network Connection | ✅ | Schedule       |    | Entity              |    |
+| GitHub Actions     |    | Local Activity | ✅ | Long-Running        | ✅ |
+| Python 3.12        | ✅ | Timer          |    | Fanout              |    |
+| Poetry 1.8.3       | ✅ | Signal         | ✅ | Continue As New     |    |
+| | ✅ | Query          | ✅ | Manual Intervention | ✅ |
+| |    | Heartbeat      | ✅ | Long-polling        |    |
+|                    |    | Update         |    | Polyglot            |    |
+|                    |    | Retry          | ✅ |                     |    |
+|                    |    | Data Converter | |                     |    |
+|                    |    | Codec Server   | |                     |    |
+|                    |    | Custom Attrs   | ✅ |                     |    |
+|                    |    | Worker Metrics |    |                     |    |
+|                    |    | Side Effect    |    |                     |    |
 
 
-These samples show how one might create a data pipeline.
+This demo illustrates how to build a simple data pipeline with Temporal using the Python SDK. It provides a simple UI which executes a pipeline as-a-workflow containing validation, extract, transform and load activities. 
 
 ## Usage
 
