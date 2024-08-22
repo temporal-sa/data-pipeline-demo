@@ -1,6 +1,6 @@
 # Temporal Data Pipeline
 
-_Leveraging the Temporal Python SDK and Terraform_
+_Leveraging the Temporal Python SDK_
 
 | Prerequisites      |    | Features       |    | Patterns            |    |
 |:-------------------|----|----------------|----|---------------------|----|
