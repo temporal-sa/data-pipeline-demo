@@ -37,9 +37,11 @@ TEMPORAL_TASK_QUEUE=data-pipeline
 TEMPORAL_NAMESPACE=helloworld.sdvdw
 ```
 
+To install Poetry run:
+    $ poetry install
+
 With this repository cloned, run the following at the root of the directory:
 
-    $ poetry install
     $ poetry update
     $ cd ui; poetry update
 
