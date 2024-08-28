@@ -9,6 +9,7 @@ from dataobjects import DataPipelineParams
 
 @activity.defn
 async def get_available_task_queue() -> str:
+    """Just a stub for typedworkflow invocation."""
     raise NotImplementedError
 
 @activity.defn

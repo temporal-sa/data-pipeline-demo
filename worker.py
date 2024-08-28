@@ -19,35 +19,62 @@ import logging
 
 interrupt_event = asyncio.Event()
 
-logging.basicConfig(level=logging.INFO)
-
 async def main():
-    client = await get_client()
+    # logging.basicConfig(level=logging.INFO)
 
-    random.seed(randint(100, 999))
+    # Comment line to see non-deterministic functionality
+    random.seed(667)
 
     # Create random task queues and build task queue selection function
-    task_queue: str = f"activity_sticky_queue-host-{UUID(int=random.getrandbits(128))}"
+    task_queue: str = (
+        f"worker_specific_task_queue-host-{UUID(int=random.getrandbits(128))}"
+    )
 
-    # Randomly assign job to a task queue
     @activity.defn(name="get_available_task_queue")
-    async def get_task_queue() -> str:
+    async def select_task_queue() -> str:
+        """Randomly assign the job to a queue"""
         return task_queue
 
+    # Start client
+    client = await get_client()
+
+    # Run a worker to distribute the workflows
     run_futures = []
     handle = Worker(
         client,
-        task_queue="activity_sticky_queue-distribution-queue",
-        workflows=[DataPipelineWorkflowHappyPath, DataPipelineWorkflowAdvancedVisibility, DataPipelineWorkflowAPIFailure, DataPipelineWorkflowNonRecoverableFailure, DataPipelineWorkflowRecoverableFailure, DataPipelineWorkflowHumanInLoopSignal, DataPipelineWorkflowHumanInLoopUpdate], 
-        activities=[get_task_queue, validate, extract, transform, load, poll, poll_with_failure],
+        task_queue="worker_specific_task_queue-distribution-queue",
+        workflows=[
+            DataPipelineWorkflowHappyPath, 
+            DataPipelineWorkflowAdvancedVisibility, 
+            DataPipelineWorkflowAPIFailure, 
+            DataPipelineWorkflowNonRecoverableFailure, 
+            DataPipelineWorkflowRecoverableFailure, 
+            DataPipelineWorkflowHumanInLoopSignal,
+            DataPipelineWorkflowHumanInLoopUpdate
+        ],
+        activities=[select_task_queue],
     )
     run_futures.append(handle.run())
     print("Base worker started")
 
-    print(f"Worker {task_queue} started")
-    print("All workers started, ctrl+c to exit")
-
+    # Run unique task queue for this particular host
+    handle = Worker(
+        client,
+        task_queue=task_queue,
+        activities=[
+            validate, 
+            extract, 
+            transform, 
+            load, 
+            poll, 
+            poll_with_failure
+        ],
+    )
+    run_futures.append(handle.run())
     # Wait until interrupted
+    print(f"Worker {task_queue} started")
+
+    print("All workers started, ctrl+c to exit")
     await asyncio.gather(*run_futures)
 
 

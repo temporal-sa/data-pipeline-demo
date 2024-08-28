@@ -7,7 +7,7 @@ import temporalio
 from temporalio.common import RetryPolicy
 
 with workflow.unsafe.imports_passed_through():
-    from activities import extract, validate, transform, load, poll
+    from activities import extract, validate, transform, load, get_available_task_queue
     from dataobjects import DataPipelineParams
 
 @workflow.defn
@@ -21,6 +21,13 @@ class DataPipelineWorkflowHumanInLoopSignal:
     async def run(self, input: DataPipelineParams) -> str:
         workflow.logger.info(f"The data pipeline for {input} beginning.")
 
+        workflow.logger.info("Searching for available worker")
+        unique_worker_task_queue = await workflow.execute_activity(
+            activity=get_available_task_queue,
+            start_to_close_timeout=timedelta(seconds=10),
+        )
+        workflow.logger.info(f"Matching workflow to worker {unique_worker_task_queue}")
+
         # Set progress to 10%
         self._progress = 10
 
@@ -28,7 +35,11 @@ class DataPipelineWorkflowHumanInLoopSignal:
         await asyncio.sleep(2)
                 
         validation = await workflow.execute_activity(
-            validate, input, start_to_close_timeout=timedelta(seconds=300), heartbeat_timeout=timedelta(seconds=20)
+            validate, 
+            input, 
+            task_queue=unique_worker_task_queue, 
+            start_to_close_timeout=timedelta(seconds=300), 
+            heartbeat_timeout=timedelta(seconds=20)
         )
         if validation == False:
             workflow.logger.info(f"Validation rejected for: {input.input_filename}")
@@ -38,7 +49,11 @@ class DataPipelineWorkflowHumanInLoopSignal:
         self._progress = 20
 
         activity_output = await workflow.execute_activity(
-            extract, input, start_to_close_timeout=timedelta(seconds=300), heartbeat_timeout=timedelta(seconds=20)
+            extract, 
+            input, 
+            task_queue=unique_worker_task_queue, 
+            start_to_close_timeout=timedelta(seconds=300), 
+            heartbeat_timeout=timedelta(seconds=20)
         )
         workflow.logger.info(f"Extract status: {input.input_filename}: {activity_output}")
 
@@ -46,7 +61,11 @@ class DataPipelineWorkflowHumanInLoopSignal:
         self._progress = 40
 
         activity_output = await workflow.execute_activity(
-            transform, input, start_to_close_timeout=timedelta(seconds=300), heartbeat_timeout=timedelta(seconds=20)
+            transform, 
+            input, 
+            task_queue=unique_worker_task_queue, 
+            start_to_close_timeout=timedelta(seconds=300), 
+            heartbeat_timeout=timedelta(seconds=20)
         )
         workflow.logger.info(f"Transform status: {input.input_filename}: {activity_output}")
 
@@ -54,7 +73,11 @@ class DataPipelineWorkflowHumanInLoopSignal:
         self._progress = 60
 
         activity_output = await workflow.execute_activity(
-            load, input, start_to_close_timeout=timedelta(seconds=300), heartbeat_timeout=timedelta(seconds=20)
+            load, 
+            input, 
+            task_queue=unique_worker_task_queue, 
+            start_to_close_timeout=timedelta(seconds=300), 
+            heartbeat_timeout=timedelta(seconds=20)
         )
         workflow.logger.info(f"Load status: {input.input_filename}: {activity_output}")
 
