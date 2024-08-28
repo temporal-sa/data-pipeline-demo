@@ -7,6 +7,9 @@ import shutil
 from temporalio import activity
 from dataobjects import DataPipelineParams
 
+@activity.defn
+async def get_available_task_queue() -> str:
+    raise NotImplementedError
 
 @activity.defn
 async def validate(input: DataPipelineParams) -> bool:

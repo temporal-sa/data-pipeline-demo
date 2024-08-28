@@ -55,7 +55,7 @@ async def run_job():
         "DataPipelineWorkflow"+selected_scenario,
         input,
         id=f'job-{job_id}',
-        task_queue=os.getenv("TEMPORAL_TASK_QUEUE"),
+        task_queue="activity_sticky_queue-distribution-queue",
     )    
 
     return render_template('job_progress.html', selected_scenario=selected_scenario, job_id=job_id)
