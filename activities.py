@@ -3,6 +3,7 @@ import random
 import os
 import json
 import shutil
+import time
 
 from temporalio import activity
 from dataobjects import DataPipelineParams
@@ -65,6 +66,9 @@ async def poll_with_failure(input: DataPipelineParams) -> str:
 
 @activity.defn
 async def poll(input: DataPipelineParams) -> str:
+    # Simulate delay
+    time.sleep(5)
+    
     return "polled successfully: found"
 
 
