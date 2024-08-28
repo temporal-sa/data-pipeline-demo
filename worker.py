@@ -20,7 +20,7 @@ import logging
 interrupt_event = asyncio.Event()
 
 async def main():
-    # logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.INFO)
 
     # Comment line to see non-deterministic functionality
     random.seed(667)

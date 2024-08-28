@@ -25,6 +25,9 @@ async def extract(input: DataPipelineParams) -> str:
     initialize(input.foldername)
     
     shutil.copy(input.foldername + "/source/" + input.input_filename, input.foldername + "/working/" + input.input_filename)
+    
+    # Simulate random sleep
+    time.sleep(random.randint(2, 7))
     activity.heartbeat(input.input_filename)
 
     return "success"
@@ -37,10 +40,12 @@ async def transform(input: DataPipelineParams) -> str:
     namespacesCSVFile.write(f"Namespace,\n")
     for i in namespaces:
         namespacesCSVFile.write(f"{i},\n")
+        # Simulate sleep
+        time.sleep(1)
+        activity.heartbeat(input.input_filename)
 
     namespacesCSVFile.close()
    
-    activity.heartbeat(input.input_filename)
 
     return "success"
 
@@ -48,6 +53,9 @@ async def transform(input: DataPipelineParams) -> str:
 async def load(input: DataPipelineParams) -> str:
     
     shutil.copy(input.foldername + "/working/" + Path(input.input_filename).stem  + ".csv", input.foldername + "/output/" + Path(input.input_filename).stem  + ".csv")
+    
+    # Simulate random sleep
+    time.sleep(random.randint(2, 7))
     activity.heartbeat(input.input_filename)
     
     cleanup(input.foldername)
@@ -68,7 +76,7 @@ async def poll_with_failure(input: DataPipelineParams) -> str:
 async def poll(input: DataPipelineParams) -> str:
     # Simulate delay
     time.sleep(5)
-    
+
     return "polled successfully: found"
 
 
