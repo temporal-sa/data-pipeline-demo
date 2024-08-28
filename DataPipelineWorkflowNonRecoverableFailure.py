@@ -37,7 +37,6 @@ class DataPipelineWorkflowNonRecoverableFailure:
         validation = await workflow.execute_activity(
             validate, 
             input, 
-            task_queue=unique_worker_task_queue, 
             start_to_close_timeout=timedelta(seconds=300), 
             heartbeat_timeout=timedelta(seconds=20)
         )

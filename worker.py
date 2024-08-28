@@ -52,7 +52,7 @@ async def main():
             DataPipelineWorkflowHumanInLoopSignal,
             DataPipelineWorkflowHumanInLoopUpdate
         ],
-        activities=[select_task_queue],
+        activities=[select_task_queue, validate],
     )
     run_futures.append(handle.run())
     print("Base worker started")
@@ -62,7 +62,6 @@ async def main():
         client,
         task_queue=task_queue,
         activities=[
-            validate, 
             extract, 
             transform, 
             load, 
