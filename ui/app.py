@@ -48,15 +48,24 @@ async def run_job():
         input_filename=data['input_filename'], 
         foldername=data['foldername'],
         poll_or_wait=data['poll_or_wait'],
-        validation=data['validation']
+        validation=data['validation'],
+        scenario=selected_scenario
     )         
 
-    await client.start_workflow(
-        "DataPipelineWorkflow"+selected_scenario,
-        input,
-        id=f'job-{job_id}',
-        task_queue="worker_specific_task_queue-distribution-queue",
-    )    
+    if selected_scenario == "HappyPath":
+        await client.start_workflow(
+            "DataPipelineWorkflowHappyPath",
+            input,
+            id=f'job-{job_id}',
+            task_queue="worker_specific_task_queue-distribution-queue",
+        )   
+    else:
+        await client.start_workflow(
+            "DataPipelineWorkflowScenarios",
+            input,
+            id=f'job-{job_id}',
+            task_queue="worker_specific_task_queue-distribution-queue",
+        )       
 
     return render_template('job_progress.html', selected_scenario=selected_scenario, job_id=job_id)
 
@@ -98,7 +107,7 @@ async def signal():
     try:
         client = await get_client()
         pipeline_workflow = client.get_workflow_handle(f'job-{job_id}')
-        await pipeline_workflow.signal("load_complete", "complete")
+        await pipeline_workflow.signal("load_complete_signal", "complete")
     except Exception as e:
         print(f"Error sending signal: {str(e)}")
         return jsonify({"error": str(e)}), 500       
@@ -114,7 +123,7 @@ async def update():
         client = await get_client()
         pipeline_workflow = client.get_workflow_handle(f'job-{job_id}')
         update_result = await pipeline_workflow.execute_update(
-            update="load_complete",
+            update="load_complete_update",
             arg="complete",
         )
     except Exception as e:

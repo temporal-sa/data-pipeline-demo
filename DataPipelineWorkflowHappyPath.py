@@ -79,8 +79,6 @@ class DataPipelineWorkflowHappyPath:
         # Set progress to 80%
         self._progress = 80
 
-        # it's ok if this activity fails: it is polling every 2 seconds
-        # see https://community.temporal.io/t/what-is-the-best-practice-for-a-polling-activity/328/2
         activity_output = await workflow.execute_activity(
             poll, 
             input, 

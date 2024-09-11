@@ -5,14 +5,10 @@ from uuid import UUID
 
 from temporalio import activity
 from temporalio.worker import Worker
-from activities import extract, validate, transform, load, poll, poll_with_failure
+from activities import extract, validate, transform, load, poll
 from DataPipelineWorkflowHappyPath import DataPipelineWorkflowHappyPath
-from DataPipelineWorkflowAdvancedVisibility import DataPipelineWorkflowAdvancedVisibility
-from DataPipelineWorkflowAPIFailure import DataPipelineWorkflowAPIFailure
-from DataPipelineWorkflowNonRecoverableFailure import DataPipelineWorkflowNonRecoverableFailure
-from DataPipelineWorkflowRecoverableFailure import DataPipelineWorkflowRecoverableFailure
-from DataPipelineWorkflowHumanInLoopSignal import DataPipelineWorkflowHumanInLoopSignal
-from DataPipelineWorkflowHumanInLoopUpdate import DataPipelineWorkflowHumanInLoopUpdate
+from DataPipelineWorkflowScenarios import DataPipelineWorkflowScenarios
+
 from client import get_client
 
 import logging
@@ -45,12 +41,7 @@ async def main():
         task_queue="worker_specific_task_queue-distribution-queue",
         workflows=[
             DataPipelineWorkflowHappyPath, 
-            DataPipelineWorkflowAdvancedVisibility, 
-            DataPipelineWorkflowAPIFailure, 
-            DataPipelineWorkflowNonRecoverableFailure, 
-            DataPipelineWorkflowRecoverableFailure, 
-            DataPipelineWorkflowHumanInLoopSignal,
-            DataPipelineWorkflowHumanInLoopUpdate
+            DataPipelineWorkflowScenarios
         ],
         activities=[select_task_queue, validate],
     )
@@ -66,7 +57,6 @@ async def main():
             transform, 
             load, 
             poll, 
-            poll_with_failure
         ],
     )
     run_futures.append(handle.run())
