@@ -8,7 +8,7 @@ import time
 from temporalio import activity
 from dataobjects import DataPipelineParams
 
-ErrorAPIUnavailable = "APIFailure"
+ErrorAPIUnavailable = "DataPipelineAPIFailure"
 
 @activity.defn
 async def get_available_task_queue() -> str:
@@ -69,8 +69,8 @@ async def load(input: DataPipelineParams) -> str:
 # it throws an exception 90% of the time (simulating "not found")
 # 10% of the time it simulates "found" and returns 
 @activity.defn
-async def poll(input: DataPipelineParams) -> str:
-    if ErrorAPIUnavailable == input.scenario:
+async def poll(input: DataPipelineParams, workflow_type: str) -> str:
+    if ErrorAPIUnavailable == workflow_type:
         if activity.info().attempt < 10:
             raise Exception("Poll failed: not found")
         return "polled successfully: found"

@@ -61,7 +61,7 @@ async def run_job():
         )   
     else:
         await client.start_workflow(
-            "DataPipelineWorkflowScenarios",
+            "DataPipeline"+ selected_scenario,
             input,
             id=f'job-{job_id}',
             task_queue="worker_specific_task_queue-distribution-queue",

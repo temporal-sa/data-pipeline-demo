@@ -1,34 +1,35 @@
 import asyncio
 from datetime import timedelta
-
+from typing import Sequence, Any
 from temporalio import workflow
 from temporalio.workflow import info
 import temporalio
-from temporalio.common import RetryPolicy
+from temporalio.common import RawValue, RetryPolicy
 from temporalio.exceptions import ApplicationError
 
 with workflow.unsafe.imports_passed_through():
     from activities import extract, validate, transform, load, get_available_task_queue, poll
     from dataobjects import DataPipelineParams, CustomException
 
-BUG        = "RecoverableFailure"
-FAILURE    = "NonRecoverableFailure"
-SIGNAL     = "HumanInLoopSignal"
-UPDATE     = "HumanInLoopUpdate"
-VISIBILITY = "AdvancedVisibility"
-
-@workflow.defn
+@workflow.defn(dynamic=True)
 class DataPipelineWorkflowScenarios:
-    
+    BUG        = "DataPipelineRecoverableFailure"
+    FAILURE    = "DataPipelineNonRecoverableFailure"
+    SIGNAL     = "DataPipelineHumanInLoopSignal"
+    UPDATE     = "DataPipelineHumanInLoopUpdate"
+    VISIBILITY = "DataPipelineAdvancedVisibility"    
+
     def __init__(self) -> None:
         self.load_complete_signal = False
         self.load_complete_update = False
         self._progress = 0
 
     @workflow.run
-    async def run(self, input: DataPipelineParams) -> str:
-        scenario = input.scenario
-        workflow.logger.info(f"The data pipeline for {input} beginning.")
+    #async def run(self, input: DataPipelineParams) -> str:
+    async def execute(self, args: Sequence[RawValue]) -> Any:
+        input = workflow.payload_converter().from_payload(args[0].payload, DataPipelineParams)
+        workflow_type = workflow.info().workflow_type
+        workflow.logger.info("Dynamic Data Pipeline workflow started, " + workflow_type)
 
         workflow.logger.info("Searching for available worker")
         unique_worker_task_queue = await workflow.execute_activity(
@@ -44,10 +45,10 @@ class DataPipelineWorkflowScenarios:
         await asyncio.sleep(2)
 
         # Advanced Visibility scenario    
-        if VISIBILITY == scenario:
+        if self.VISIBILITY == workflow_type:
             workflow.upsert_search_attributes({"Step": ["validation"]})
 
-        if FAILURE == scenario:
+        if self.FAILURE == workflow_type:
             input.validation = "blue"
 
         validation = await workflow.execute_activity(
@@ -65,7 +66,7 @@ class DataPipelineWorkflowScenarios:
         self._progress = 20
 
         # Advanced Visibility scenario    
-        if VISIBILITY == scenario:
+        if self.VISIBILITY == workflow_type:
             workflow.upsert_search_attributes({"Step": ["extract"]})
 
         activity_output = await workflow.execute_activity(
@@ -81,7 +82,7 @@ class DataPipelineWorkflowScenarios:
         self._progress = 40
 
         # Advanced Visibility scenario    
-        if VISIBILITY == scenario:
+        if self.VISIBILITY == workflow_type:
             workflow.upsert_search_attributes({"Step": ["transform"]})
 
         activity_output = await workflow.execute_activity(
@@ -94,7 +95,7 @@ class DataPipelineWorkflowScenarios:
         workflow.logger.info(f"Transform status: {input.input_filename}: {activity_output}")
 
         # Non-Recoverable (bug) Scenario
-        if BUG == scenario:
+        if self.BUG == workflow_type:
             # Comment out to fix recoverable scenario
             raise Exception("Workflow bug!")
 
@@ -102,7 +103,7 @@ class DataPipelineWorkflowScenarios:
         self._progress = 60
 
         # Advanced Visibility scenario    
-        if VISIBILITY == scenario:
+        if self.VISIBILITY == workflow_type:
             workflow.upsert_search_attributes({"Step": ["load"]})
 
         activity_output = await workflow.execute_activity(
@@ -118,7 +119,7 @@ class DataPipelineWorkflowScenarios:
         self._progress = 80
 
         # Human In the Loop (signal) scenario
-        if SIGNAL == scenario:
+        if self.SIGNAL == workflow_type:
             try:
                 await workflow.wait_condition(lambda: self.load_complete_signal, timeout=60)
                 workflow.logger.info(f"Received signal that load completed: {input.input_filename} load complete: {self.load_complete_signal}")
@@ -127,7 +128,7 @@ class DataPipelineWorkflowScenarios:
                 raise temporalio.exceptions.ApplicationError("Load did not complete before timeout")
 
         # Human In the Loop (update) scenario
-        elif UPDATE == scenario:
+        elif self.UPDATE == workflow_type:
             try:
                 await workflow.wait_condition(lambda: self.load_complete_update, timeout=60)
                 workflow.logger.info(f"Received update that load completed: {input.input_filename} load complete: {self.load_complete_update}")
@@ -139,7 +140,7 @@ class DataPipelineWorkflowScenarios:
 
             activity_output = await workflow.execute_activity(
                 poll, 
-                input,
+                args=[input, workflow_type],
                 task_queue=unique_worker_task_queue, 
                 start_to_close_timeout=timedelta(seconds=3000), 
                 heartbeat_timeout=timedelta(seconds=20), 
@@ -148,7 +149,7 @@ class DataPipelineWorkflowScenarios:
             workflow.logger.info(f"Poll status: {input.input_filename}: {activity_output}")
 
         # Advanced Visibility scenario    
-        if VISIBILITY == scenario:
+        if self.VISIBILITY == workflow_type:
             workflow.upsert_search_attributes({"Step": ["complete"]})        
 
         # Set progress to 100%

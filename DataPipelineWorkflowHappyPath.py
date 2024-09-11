@@ -15,6 +15,7 @@ class DataPipelineWorkflowHappyPath:
 
     @workflow.run
     async def run(self, input: DataPipelineParams) -> str:
+        workflow_type = workflow.info().workflow_type
         workflow.logger.info(f"The data pipeline for {input} beginning.")
 
         workflow.logger.info("Searching for available worker")
@@ -81,7 +82,7 @@ class DataPipelineWorkflowHappyPath:
 
         activity_output = await workflow.execute_activity(
             poll, 
-            input, 
+            args=[input, workflow_type], 
             task_queue=unique_worker_task_queue, 
             start_to_close_timeout=timedelta(seconds=3000), 
             heartbeat_timeout=timedelta(seconds=20), 
