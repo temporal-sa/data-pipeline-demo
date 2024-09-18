@@ -6,7 +6,7 @@ import shutil
 import time
 
 from temporalio import activity
-from dataobjects import DataPipelineParams
+from dataobjects import DataPipelineParams, IDEMPOTENT_FILE
 
 ErrorAPIUnavailable = "DataPipelineAPIFailure"
 
@@ -53,6 +53,8 @@ async def transform(input: DataPipelineParams) -> str:
 
 @activity.defn
 async def load(input: DataPipelineParams) -> str:
+    if is_idempotent(input.key):
+        return "idempotency key " + input.key + " found, skipping... "
     
     shutil.copy(input.foldername + "/working/" + Path(input.input_filename).stem  + ".csv", input.foldername + "/output/" + Path(input.input_filename).stem  + ".csv")
     
@@ -61,6 +63,7 @@ async def load(input: DataPipelineParams) -> str:
     activity.heartbeat(input.input_filename)
     
     cleanup(input.foldername)
+    write_idempotent_key(input.key)
 
     return "success"
 
@@ -104,3 +107,14 @@ def get_namespaces(datafolder: str, filename: str):
     for i in namespacesDict['namespaces']:
         namespaces.append(i)
     return namespaces
+
+def is_idempotent(key):
+    if not os.path.exists(IDEMPOTENT_FILE):
+        return False
+    with open(IDEMPOTENT_FILE, "r") as file:
+        keys = file.read().splitlines()
+        return key in keys
+
+def write_idempotent_key(key):
+    with open(IDEMPOTENT_FILE, "a") as file:
+        file.write(f"{key}\n")

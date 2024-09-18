@@ -1,5 +1,6 @@
 import asyncio
 import random
+import os
 from random import randint
 from uuid import UUID
 
@@ -8,7 +9,7 @@ from temporalio.worker import Worker
 from activities import extract, validate, transform, load, poll
 from DataPipelineWorkflowHappyPath import DataPipelineWorkflowHappyPath
 from DataPipelineWorkflowScenarios import DataPipelineWorkflowScenarios
-
+from dataobjects import IDEMPOTENT_FILE
 from client import get_client
 
 import logging
@@ -17,6 +18,10 @@ interrupt_event = asyncio.Event()
 
 async def main():
     logging.basicConfig(level=logging.INFO)
+
+    # Delete idempotent keys when worker starts
+    if os.path.exists(IDEMPOTENT_FILE):
+        os.remove(IDEMPOTENT_FILE)
 
     # Comment line to see non-deterministic functionality
     random.seed(667)

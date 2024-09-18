@@ -49,7 +49,8 @@ async def run_job():
         foldername=data['foldername'],
         poll_or_wait=data['poll_or_wait'],
         validation=data['validation'],
-        scenario=selected_scenario
+        scenario=selected_scenario,
+        key=job_id
     )         
 
     if selected_scenario == "HappyPath":

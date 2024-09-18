@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+IDEMPOTENT_FILE = "idempotent_keys.txt"
+
 @dataclass
 class YourParams:
     greeting: str
@@ -12,6 +14,7 @@ class DataPipelineParams:
     foldername: str #this would be a reference to a network folder in  real example
     validation: str
     scenario: str
+    key: str
 
 class CustomException(Exception):
     """Custom exception for specific error handling."""
