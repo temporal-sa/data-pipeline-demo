@@ -18,6 +18,7 @@ class DataPipelineWorkflowScenarios:
     SIGNAL     = "DataPipelineHumanInLoopSignal"
     UPDATE     = "DataPipelineHumanInLoopUpdate"
     VISIBILITY = "DataPipelineAdvancedVisibility"    
+    IDEMPOTENCY = "DataPipelineIdempotency"
 
     def __init__(self) -> None:
         self.load_complete_signal = False
@@ -25,8 +26,7 @@ class DataPipelineWorkflowScenarios:
         self._progress = 0
 
     @workflow.run
-    #async def run(self, input: DataPipelineParams) -> str:
-    async def execute(self, args: Sequence[RawValue]) -> Any:
+    async def run(self, args: Sequence[RawValue]) -> Any:
         input = workflow.payload_converter().from_payload(args[0].payload, DataPipelineParams)
         workflow_type = workflow.info().workflow_type
         workflow.logger.info("Dynamic Data Pipeline workflow started, " + workflow_type)
@@ -114,6 +114,18 @@ class DataPipelineWorkflowScenarios:
             heartbeat_timeout=timedelta(seconds=20)
         )
         workflow.logger.info(f"Load status: {input.input_filename}: {activity_output}")
+        
+        # Idempotency Scenario
+        if self.IDEMPOTENCY == workflow_type:
+            print("here")
+            activity_output = await workflow.execute_activity(
+                load, 
+                input, 
+                task_queue=unique_worker_task_queue, 
+                start_to_close_timeout=timedelta(seconds=300), 
+                heartbeat_timeout=timedelta(seconds=20)
+            )
+            workflow.logger.info(f"Load status: {input.input_filename}: {activity_output}")
 
         # Set progress to 80%
         self._progress = 80

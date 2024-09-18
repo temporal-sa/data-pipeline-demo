@@ -19,6 +19,7 @@ scenarios = [
     "AdvancedVisibility",
     "HumanInLoopSignal",
     "HumanInLoopUpdate",
+    "Idempotency",
     "APIFailure",
     "RecoverableFailure",
     "NonRecoverableFailure",
