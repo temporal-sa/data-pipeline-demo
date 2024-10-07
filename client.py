@@ -1,8 +1,13 @@
 from temporalio.client import Client, TLSConfig
 from typing import Optional
 import os
+import dataclasses
+import temporalio.converter
+from encryption_codec import EncryptionCodec
 
 async def get_client()-> Client:
+    client = None
+    encrypt_payloads = os.getenv("ENCRYPT_PAYLOADS", "false").lower() == "true"
 
     if (
         os.getenv("TEMPORAL_MTLS_TLS_CERT")
@@ -15,19 +20,30 @@ async def get_client()-> Client:
         with open(os.getenv("TEMPORAL_MTLS_TLS_KEY"), "rb") as f:
             client_key = f.read()
 
-        # Start client
-        client = await Client.connect(
-            os.getenv("TEMPORAL_HOST_URL"),
-            namespace=os.getenv("TEMPORAL_NAMESPACE"),
-            tls=TLSConfig(
-                server_root_ca_cert=server_root_ca_cert,
-                client_cert=client_cert,
-                client_private_key=client_key,
-            ),
-            #data_converter=dataclasses.replace(
-            #    temporalio.converter.default(), payload_codec=EncryptionCodec()
-            #),            
-        )
+        if encrypt_payloads:
+            print("Worker payloads will be encrypted")
+            client = await Client.connect(
+                os.getenv("TEMPORAL_HOST_URL"),
+                namespace=os.getenv("TEMPORAL_NAMESPACE"),
+                tls=TLSConfig(
+                    server_root_ca_cert=server_root_ca_cert,
+                    client_cert=client_cert,
+                    client_private_key=client_key,
+                ),
+                data_converter=dataclasses.replace(
+                    temporalio.converter.default(), payload_codec=EncryptionCodec()
+                ),            
+            )
+        else:
+            client = await Client.connect(
+                os.getenv("TEMPORAL_HOST_URL"),
+                namespace=os.getenv("TEMPORAL_NAMESPACE"),
+                tls=TLSConfig(
+                    server_root_ca_cert=server_root_ca_cert,
+                    client_cert=client_cert,
+                    client_private_key=client_key,
+                ),
+            )            
     else:
         client = await Client.connect(
             "localhost:7233",

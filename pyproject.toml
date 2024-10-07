@@ -5,6 +5,9 @@ description = ""
 authors = ["Joshua Smith <joshmsmith@gmail.com>"]
 readme = "README.md"
 
+[tool.poetry.group.encryption]
+dependencies = { cryptography = "^38.0.1", aiohttp = "^3.8.1" }
+
 [tool.poetry.dependencies]
 python = "^3.10"
 temporalio = "^1.7.1"

@@ -37,6 +37,11 @@ TEMPORAL_TASK_QUEUE=data-pipeline
 TEMPORAL_NAMESPACE=helloworld.sdvdw
 ```
 
+Optionally you can encrypt payloads by setting
+```
+ENCRYPT_PAYLOADS=true
+```
+
 To install Poetry run:
     $ poetry install
 

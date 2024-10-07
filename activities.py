@@ -6,6 +6,7 @@ import shutil
 import time
 
 from temporalio import activity
+from temporalio.exceptions import ApplicationError
 from dataobjects import DataPipelineParams, IDEMPOTENT_FILE
 
 ErrorAPIUnavailable = "DataPipelineAPIFailure"
@@ -24,8 +25,9 @@ async def validate(input: DataPipelineParams) -> bool:
 
 @activity.defn
 async def extract(input: DataPipelineParams) -> str:
-    initialize(input.foldername)
-    
+    if err := initialize(input.foldername):
+        raise ApplicationError("Initialization failed! " + err, non_retryable=True)
+ 
     shutil.copy(input.foldername + "/source/" + input.input_filename, input.foldername + "/working/" + input.input_filename)
     
     # Simulate random sleep
@@ -36,7 +38,10 @@ async def extract(input: DataPipelineParams) -> str:
 
 @activity.defn
 async def transform(input: DataPipelineParams) -> str:    
-    namespaces = get_namespaces(input.foldername, input.input_filename)
+    namespaces, err = get_namespaces(input.foldername, input.input_filename)
+    if err:
+        raise ApplicationError("Failed to load namespaces from json file! " + err, non_retryable=True)
+
     workingfilename = input.foldername + "/working/" + Path(input.input_filename).stem  + ".csv"
     namespacesCSVFile = open(workingfilename, "w+")
     namespacesCSVFile.write(f"Namespace,\n")
@@ -53,7 +58,10 @@ async def transform(input: DataPipelineParams) -> str:
 
 @activity.defn
 async def load(input: DataPipelineParams) -> str:
-    if is_idempotent(input.key):
+    keyExists, err = is_idempotent(input.key)
+    if err:
+        raise ApplicationError("Failed to read idempotency key! " + err, non_retryable=True)
+    elif keyExists:
         return "idempotency key " + input.key + " found, skipping... "
     
     shutil.copy(input.foldername + "/working/" + Path(input.input_filename).stem  + ".csv", input.foldername + "/output/" + Path(input.input_filename).stem  + ".csv")
@@ -61,9 +69,12 @@ async def load(input: DataPipelineParams) -> str:
     # Simulate random sleep
     time.sleep(random.randint(1, 3))
     activity.heartbeat(input.input_filename)
+
+    if err := cleanup(input.foldername):
+        raise ApplicationError("Cleanup failed! " + err, non_retryable=True)
     
-    cleanup(input.foldername)
-    write_idempotent_key(input.key)
+    if err := write_idempotent_key(input.key):
+        raise ApplicationError("Failed to create idempotency key! " + err, non_retryable=True)
 
     return "success"
 
@@ -82,39 +93,57 @@ async def poll(input: DataPipelineParams, workflow_type: str) -> str:
         time.sleep(5)
         return "polled successfully: found"
 
-def initialize(datafolder: str):    
-    if(os.path.isfile(datafolder + "/working/" + "info.json")):
-        os.remove(datafolder + "/working/" + "info.json")
-    if(os.path.isfile(datafolder + "/working/" + "info.csv")):
-        os.remove(datafolder + "/working/" + "info.csv")
-    if(os.path.isfile(datafolder + "/output/" + "info.csv")):
-        os.remove(datafolder + "/output/" + "info.csv")
+def initialize(datafolder: str):
+    try:    
+        if(os.path.isfile(datafolder + "/working/" + "info.json")):
+            os.remove(datafolder + "/working/" + "info.json")
+        if(os.path.isfile(datafolder + "/working/" + "info.csv")):
+            os.remove(datafolder + "/working/" + "info.csv")
+        if(os.path.isfile(datafolder + "/output/" + "info.csv")):
+            os.remove(datafolder + "/output/" + "info.csv")
 
-def cleanup(datafolder: str):   
-    if(os.path.isfile(datafolder + "/working/" + "info.json")):
-        os.remove(datafolder + "/working/" + "info.json")
-    if(os.path.isfile(datafolder + "/working/" + "info.csv")):
-        os.remove(datafolder + "/working/" + "info.csv")
+        os.makedirs(datafolder + "/working/", exist_ok=True)
+        os.makedirs(datafolder + "/output/", exist_ok=True)
+    except OSError as e:
+        return str(e)
 
-
+def cleanup(datafolder: str):
+    try:    
+        if(os.path.isfile(datafolder + "/working/" + "info.json")):
+            os.remove(datafolder + "/working/" + "info.json")
+        if(os.path.isfile(datafolder + "/working/" + "info.csv")):
+            os.remove(datafolder + "/working/" + "info.csv")
+    except OSError as e:
+        return str(e)
+    
 def get_namespaces(datafolder: str, filename: str):
     namespaces = []
+    try:
+        namespacesJSONFile = open(datafolder + "/working/" + filename, "r")
+        namespacesDict = json.load(namespacesJSONFile)
+        namespacesJSONFile.close()
 
-    namespacesJSONFile = open(datafolder + "/working/" + filename, "r")
-    namespacesDict = json.load(namespacesJSONFile)
-    namespacesJSONFile.close()
-
-    for i in namespacesDict['namespaces']:
-        namespaces.append(i)
-    return namespaces
+        for i in namespacesDict['namespaces']:
+            namespaces.append(i)
+    except OSError as e:
+        return namespaces, str(e) 
+    
+    return namespaces, None
 
 def is_idempotent(key):
-    if not os.path.exists(IDEMPOTENT_FILE):
-        return False
-    with open(IDEMPOTENT_FILE, "r") as file:
-        keys = file.read().splitlines()
-        return key in keys
+    try: 
+        if not os.path.exists(IDEMPOTENT_FILE):
+            return False, None
+        with open(IDEMPOTENT_FILE, "r") as file:
+            keys = file.read().splitlines()
+            return key in keys, None
+    except OSError as e:
+        return False, str(e)
+
 
 def write_idempotent_key(key):
-    with open(IDEMPOTENT_FILE, "a") as file:
-        file.write(f"{key}\n")
+    try:
+        with open(IDEMPOTENT_FILE, "a") as file:
+            file.write(f"{key}\n")
+    except OSError as e:
+        return str(e)

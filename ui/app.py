@@ -90,7 +90,11 @@ async def get_progress():
     try:
         client = await get_client()
         pipeline_workflow = client.get_workflow_handle(f'job-{job_id}')
-        progress_percent = await pipeline_workflow.query("progress")
+        
+        try:
+            progress_percent = await pipeline_workflow.query("progress")
+        except Exception as e:
+            print(e)
 
         desc = await pipeline_workflow.describe()
         if desc.status == 3:
