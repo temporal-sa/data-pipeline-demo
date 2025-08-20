@@ -1,6 +1,7 @@
 import asyncio
+from collections.abc import Sequence
 from datetime import timedelta
-from typing import Any, Sequence
+from typing import Any
 
 import temporalio
 from temporalio import workflow
@@ -35,9 +36,7 @@ class DataPipelineWorkflowScenarios:
 
     @workflow.run
     async def run(self, args: Sequence[RawValue]) -> Any:
-        input = workflow.payload_converter().from_payload(
-            args[0].payload, DataPipelineParams
-        )
+        input = workflow.payload_converter().from_payload(args[0].payload, DataPipelineParams)
         workflow_type = workflow.info().workflow_type
         workflow.logger.info("Dynamic Data Pipeline workflow started, " + workflow_type)
 
@@ -68,11 +67,9 @@ class DataPipelineWorkflowScenarios:
             heartbeat_timeout=timedelta(seconds=20),
         )
 
-        if validation == False:
+        if not validation:
             workflow.logger.info(f"Validation rejected for: {input.input_filename}")
-            raise ApplicationError(
-                f"Workflow failed due to validation"
-            ) from CustomException("Validation Failed")
+            raise ApplicationError("Workflow failed due to validation") from CustomException("Validation Failed")
 
         # Set progress to 20%
         self._progress = 20
@@ -88,9 +85,7 @@ class DataPipelineWorkflowScenarios:
             start_to_close_timeout=timedelta(seconds=300),
             heartbeat_timeout=timedelta(seconds=20),
         )
-        workflow.logger.info(
-            f"Extract status: {input.input_filename}: {activity_output}"
-        )
+        workflow.logger.info(f"Extract status: {input.input_filename}: {activity_output}")
 
         # Set progress to 40%
         self._progress = 40
@@ -106,9 +101,7 @@ class DataPipelineWorkflowScenarios:
             start_to_close_timeout=timedelta(seconds=300),
             heartbeat_timeout=timedelta(seconds=20),
         )
-        workflow.logger.info(
-            f"Transform status: {input.input_filename}: {activity_output}"
-        )
+        workflow.logger.info(f"Transform status: {input.input_filename}: {activity_output}")
 
         # Non-Recoverable (bug) Scenario
         if self.BUG == workflow_type:
@@ -141,9 +134,7 @@ class DataPipelineWorkflowScenarios:
                 start_to_close_timeout=timedelta(seconds=300),
                 heartbeat_timeout=timedelta(seconds=20),
             )
-            workflow.logger.info(
-                f"Load status: {input.input_filename}: {activity_output}"
-            )
+            workflow.logger.info(f"Load status: {input.input_filename}: {activity_output}")
 
         # Set progress to 80%
         self._progress = 80
@@ -151,47 +142,36 @@ class DataPipelineWorkflowScenarios:
         # Human In the Loop (signal) scenario
         if self.SIGNAL == workflow_type:
             try:
-                await workflow.wait_condition(
-                    lambda: self.load_complete_signal, timeout=60
-                )
+                await workflow.wait_condition(lambda: self.load_complete_signal, timeout=60)
                 workflow.logger.info(
-                    f"Received signal that load completed: {input.input_filename} load complete: {self.load_complete_signal}"
+                    f"Received signal that load completed: {input.input_filename} "
+                    f"load complete: {self.load_complete_signal}"
                 )
-            except asyncio.TimeoutError:
+            except asyncio.TimeoutError as e:
                 # could return "Load did not complete before timeout."
-                raise temporalio.exceptions.ApplicationError(
-                    "Load did not complete before timeout"
-                )
+                raise temporalio.exceptions.ApplicationError("Load did not complete before timeout") from e
 
         # Human In the Loop (update) scenario
         elif self.UPDATE == workflow_type:
             try:
-                await workflow.wait_condition(
-                    lambda: self.load_complete_update, timeout=60
-                )
+                await workflow.wait_condition(lambda: self.load_complete_update, timeout=60)
                 workflow.logger.info(
-                    f"Received update that load completed: {input.input_filename} load complete: {self.load_complete_update}"
+                    f"Received update that load completed: {input.input_filename} "
+                    f"load complete: {self.load_complete_update}"
                 )
-            except asyncio.TimeoutError:
+            except asyncio.TimeoutError as e:
                 # could return "Load did not complete before timeout."
-                raise temporalio.exceptions.ApplicationError(
-                    "Load did not complete before timeout"
-                )
+                raise temporalio.exceptions.ApplicationError("Load did not complete before timeout") from e
         else:
-
             activity_output = await workflow.execute_activity(
                 poll,
                 args=[input, workflow_type],
                 task_queue=unique_worker_task_queue,
                 start_to_close_timeout=timedelta(seconds=3000),
                 heartbeat_timeout=timedelta(seconds=20),
-                retry_policy=RetryPolicy(
-                    initial_interval=timedelta(seconds=2), backoff_coefficient=1
-                ),
+                retry_policy=RetryPolicy(initial_interval=timedelta(seconds=2), backoff_coefficient=1),
             )
-            workflow.logger.info(
-                f"Poll status: {input.input_filename}: {activity_output}"
-            )
+            workflow.logger.info(f"Poll status: {input.input_filename}: {activity_output}")
 
         # Advanced Visibility scenario
         if self.VISIBILITY == workflow_type:
@@ -207,14 +187,6 @@ class DataPipelineWorkflowScenarios:
         self.load_complete_signal = True
 
     @workflow.update
-    async def load_complete_update(self, complete: str) -> None:
-        self.load_complete_update = True
-        return "Workflow update successful"
-
-    @workflow.query
-    def progress(self) -> int:
-        return self._progress @ workflow.update
-
     async def load_complete_update(self, complete: str) -> None:
         self.load_complete_update = True
         return "Workflow update successful"

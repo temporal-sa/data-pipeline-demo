@@ -9,5 +9,3 @@ class JobInput:
     Filename: str
     WorkDir: str
     OutputDir: str
-
-    OutputDir: str

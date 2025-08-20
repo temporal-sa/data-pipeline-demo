@@ -1,10 +1,9 @@
 import dataclasses
 import os
-from typing import Optional
 
 import temporalio.converter
-from temporalio.client import Client, TLSConfig
 from dotenv import load_dotenv
+from temporalio.client import Client, TLSConfig
 
 from encryption_codec import EncryptionCodec
 
@@ -16,11 +15,8 @@ async def get_client() -> Client:
     client = None
     encrypt_payloads = os.getenv("ENCRYPT_PAYLOADS", "false").lower() == "true"
 
-    if (
-        os.getenv("TEMPORAL_MTLS_TLS_CERT")
-        and os.getenv("TEMPORAL_MTLS_TLS_KEY") is not None
-    ):
-        server_root_ca_cert: Optional[bytes] = None
+    if os.getenv("TEMPORAL_MTLS_TLS_CERT") and os.getenv("TEMPORAL_MTLS_TLS_KEY") is not None:
+        server_root_ca_cert: bytes | None = None
         with open(os.getenv("TEMPORAL_MTLS_TLS_CERT"), "rb") as f:
             client_cert = f.read()
 
@@ -37,9 +33,7 @@ async def get_client() -> Client:
                     client_cert=client_cert,
                     client_private_key=client_key,
                 ),
-                data_converter=dataclasses.replace(
-                    temporalio.converter.default(), payload_codec=EncryptionCodec()
-                ),
+                data_converter=dataclasses.replace(temporalio.converter.default(), payload_codec=EncryptionCodec()),
             )
         else:
             client = await Client.connect(

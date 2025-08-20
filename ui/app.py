@@ -1,13 +1,6 @@
-import os
-import sys
 import uuid
 
-from data import JobInput
 from flask import Flask, jsonify, render_template, request
-
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.abspath(os.path.join(current_dir, ".."))
-sys.path.append(parent_dir)
 
 from client import get_client
 from dataobjects import DataPipelineParams
@@ -71,9 +64,7 @@ async def run_job():
             task_queue="worker_specific_task_queue-distribution-queue",
         )
 
-    return render_template(
-        "job_progress.html", selected_scenario=selected_scenario, job_id=job_id
-    )
+    return render_template("job_progress.html", selected_scenario=selected_scenario, job_id=job_id)
 
 
 @app.route("/confirmation")
@@ -108,7 +99,7 @@ async def get_progress():
             return jsonify({"error": error_message}), 500
 
         return jsonify({"progress": progress_percent})
-    except:
+    except Exception:
         return jsonify({"progress": progress_percent})
 
 

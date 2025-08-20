@@ -18,7 +18,6 @@ with workflow.unsafe.imports_passed_through():
 
 @workflow.defn
 class DataPipelineWorkflowHappyPath:
-
     def __init__(self) -> None:
         self._progress = 0
 
@@ -60,9 +59,7 @@ class DataPipelineWorkflowHappyPath:
             start_to_close_timeout=timedelta(seconds=300),
             heartbeat_timeout=timedelta(seconds=20),
         )
-        workflow.logger.info(
-            f"Extract status: {input.input_filename}: {activity_output}"
-        )
+        workflow.logger.info(f"Extract status: {input.input_filename}: {activity_output}")
 
         # Set progress to 40%
         self._progress = 40
@@ -74,9 +71,7 @@ class DataPipelineWorkflowHappyPath:
             start_to_close_timeout=timedelta(seconds=300),
             heartbeat_timeout=timedelta(seconds=20),
         )
-        workflow.logger.info(
-            f"Transform status: {input.input_filename}: {activity_output}"
-        )
+        workflow.logger.info(f"Transform status: {input.input_filename}: {activity_output}")
 
         # Set progress to 60%
         self._progress = 60
@@ -99,9 +94,7 @@ class DataPipelineWorkflowHappyPath:
             task_queue=unique_worker_task_queue,
             start_to_close_timeout=timedelta(seconds=3000),
             heartbeat_timeout=timedelta(seconds=20),
-            retry_policy=RetryPolicy(
-                initial_interval=timedelta(seconds=2), backoff_coefficient=1
-            ),
+            retry_policy=RetryPolicy(initial_interval=timedelta(seconds=2), backoff_coefficient=1),
         )
 
         workflow.logger.info(f"Poll status: {input.input_filename}: {activity_output}")

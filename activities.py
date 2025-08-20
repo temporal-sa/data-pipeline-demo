@@ -12,40 +12,47 @@ from dataobjects import IDEMPOTENT_FILE, DataPipelineParams
 
 ErrorAPIUnavailable = "DataPipelineAPIFailure"
 
+
 @activity.defn
 async def get_available_task_queue() -> str:
     """Just a stub for typedworkflow invocation."""
     raise NotImplementedError
 
+
 @activity.defn
 async def validate(input: DataPipelineParams) -> bool:
-    if(input.validation == "blue"):
+    if input.validation == "blue":
         return False
     else:
         return True
+
 
 @activity.defn
 async def extract(input: DataPipelineParams) -> str:
     if err := initialize(input.foldername):
         raise ApplicationError("Initialization failed! " + err, non_retryable=True)
- 
-    shutil.copy(input.foldername + "/source/" + input.input_filename, input.foldername + "/working/" + input.input_filename)
-    
+
+    shutil.copy(
+        input.foldername + "/source/" + input.input_filename,
+        input.foldername + "/working/" + input.input_filename,
+    )
+
     # Simulate random sleep
     time.sleep(random.randint(1, 3))
     activity.heartbeat(input.input_filename)
 
     return "success"
 
+
 @activity.defn
-async def transform(input: DataPipelineParams) -> str:    
+async def transform(input: DataPipelineParams) -> str:
     namespaces, err = get_namespaces(input.foldername, input.input_filename)
     if err:
         raise ApplicationError("Failed to load namespaces from json file! " + err, non_retryable=True)
 
-    workingfilename = input.foldername + "/working/" + Path(input.input_filename).stem  + ".csv"
+    workingfilename = input.foldername + "/working/" + Path(input.input_filename).stem + ".csv"
     namespacesCSVFile = open(workingfilename, "w+")
-    namespacesCSVFile.write(f"Namespace,\n")
+    namespacesCSVFile.write("Namespace,\n")
     for i in namespaces:
         namespacesCSVFile.write(f"{i},\n")
         # Simulate sleep
@@ -53,9 +60,9 @@ async def transform(input: DataPipelineParams) -> str:
         activity.heartbeat(input.input_filename)
 
     namespacesCSVFile.close()
-   
 
     return "success"
+
 
 @activity.defn
 async def load(input: DataPipelineParams) -> str:
@@ -64,25 +71,29 @@ async def load(input: DataPipelineParams) -> str:
         raise ApplicationError("Failed to read idempotency key! " + err, non_retryable=True)
     elif keyExists:
         return "idempotency key " + input.key + " found, skipping... "
-    
-    shutil.copy(input.foldername + "/working/" + Path(input.input_filename).stem  + ".csv", input.foldername + "/output/" + Path(input.input_filename).stem  + ".csv")
-    
+
+    shutil.copy(
+        input.foldername + "/working/" + Path(input.input_filename).stem + ".csv",
+        input.foldername + "/output/" + Path(input.input_filename).stem + ".csv",
+    )
+
     # Simulate random sleep
     time.sleep(random.randint(1, 3))
     activity.heartbeat(input.input_filename)
 
     if err := cleanup(input.foldername):
         raise ApplicationError("Cleanup failed! " + err, non_retryable=True)
-    
+
     if err := write_idempotent_key(input.key):
         raise ApplicationError("Failed to create idempotency key! " + err, non_retryable=True)
 
     return "success"
 
+
 # this activity simulates polling for demo purposes
 # see https://community.temporal.io/t/what-is-the-best-practice-for-a-polling-activity/328/2
 # it throws an exception 90% of the time (simulating "not found")
-# 10% of the time it simulates "found" and returns 
+# 10% of the time it simulates "found" and returns
 @activity.defn
 async def poll(input: DataPipelineParams, workflow_type: str) -> str:
     if ErrorAPIUnavailable == workflow_type:
@@ -94,13 +105,14 @@ async def poll(input: DataPipelineParams, workflow_type: str) -> str:
         time.sleep(5)
         return "polled successfully: found"
 
+
 def initialize(datafolder: str):
-    try:    
-        if(os.path.isfile(datafolder + "/working/" + "info.json")):
+    try:
+        if os.path.isfile(datafolder + "/working/" + "info.json"):
             os.remove(datafolder + "/working/" + "info.json")
-        if(os.path.isfile(datafolder + "/working/" + "info.csv")):
+        if os.path.isfile(datafolder + "/working/" + "info.csv"):
             os.remove(datafolder + "/working/" + "info.csv")
-        if(os.path.isfile(datafolder + "/output/" + "info.csv")):
+        if os.path.isfile(datafolder + "/output/" + "info.csv"):
             os.remove(datafolder + "/output/" + "info.csv")
 
         os.makedirs(datafolder + "/working/", exist_ok=True)
@@ -108,34 +120,37 @@ def initialize(datafolder: str):
     except OSError as e:
         return str(e)
 
+
 def cleanup(datafolder: str):
-    try:    
-        if(os.path.isfile(datafolder + "/working/" + "info.json")):
+    try:
+        if os.path.isfile(datafolder + "/working/" + "info.json"):
             os.remove(datafolder + "/working/" + "info.json")
-        if(os.path.isfile(datafolder + "/working/" + "info.csv")):
+        if os.path.isfile(datafolder + "/working/" + "info.csv"):
             os.remove(datafolder + "/working/" + "info.csv")
     except OSError as e:
         return str(e)
-    
+
+
 def get_namespaces(datafolder: str, filename: str):
     namespaces = []
     try:
-        namespacesJSONFile = open(datafolder + "/working/" + filename, "r")
+        namespacesJSONFile = open(datafolder + "/working/" + filename)
         namespacesDict = json.load(namespacesJSONFile)
         namespacesJSONFile.close()
 
-        for i in namespacesDict['namespaces']:
+        for i in namespacesDict["namespaces"]:
             namespaces.append(i)
     except OSError as e:
-        return namespaces, str(e) 
-    
+        return namespaces, str(e)
+
     return namespaces, None
 
+
 def is_idempotent(key):
-    try: 
+    try:
         if not os.path.exists(IDEMPOTENT_FILE):
             return False, None
-        with open(IDEMPOTENT_FILE, "r") as file:
+        with open(IDEMPOTENT_FILE) as file:
             keys = file.read().splitlines()
             return key in keys, None
     except OSError as e:
@@ -147,4 +162,4 @@ def write_idempotent_key(key):
         with open(IDEMPOTENT_FILE, "a") as file:
             file.write(f"{key}\n")
     except OSError as e:
-        return str(e)        return str(e)
+        return str(e)
