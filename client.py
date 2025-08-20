@@ -1,11 +1,18 @@
-from temporalio.client import Client, TLSConfig
-from typing import Optional
-import os
 import dataclasses
+import os
+from typing import Optional
+
 import temporalio.converter
+from temporalio.client import Client, TLSConfig
+from dotenv import load_dotenv
+
 from encryption_codec import EncryptionCodec
 
-async def get_client()-> Client:
+# Load environment variables from .env file
+load_dotenv()
+
+
+async def get_client() -> Client:
     client = None
     encrypt_payloads = os.getenv("ENCRYPT_PAYLOADS", "false").lower() == "true"
 
@@ -32,7 +39,7 @@ async def get_client()-> Client:
                 ),
                 data_converter=dataclasses.replace(
                     temporalio.converter.default(), payload_codec=EncryptionCodec()
-                ),            
+                ),
             )
         else:
             client = await Client.connect(
@@ -43,10 +50,10 @@ async def get_client()-> Client:
                     client_cert=client_cert,
                     client_private_key=client_key,
                 ),
-            )            
+            )
     else:
         client = await Client.connect(
             "localhost:7233",
         )
 
-    return client    
+    return client

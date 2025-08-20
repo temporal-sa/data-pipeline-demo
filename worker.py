@@ -1,20 +1,20 @@
 import asyncio
-import random
+import logging
 import os
-from random import randint
+import random
 from uuid import UUID
 
 from temporalio import activity
 from temporalio.worker import Worker
-from activities import extract, validate, transform, load, poll
+
+from activities import extract, load, poll, transform, validate
+from client import get_client
+from dataobjects import IDEMPOTENT_FILE
 from DataPipelineWorkflowHappyPath import DataPipelineWorkflowHappyPath
 from DataPipelineWorkflowScenarios import DataPipelineWorkflowScenarios
-from dataobjects import IDEMPOTENT_FILE
-from client import get_client
-
-import logging
 
 interrupt_event = asyncio.Event()
+
 
 async def main():
     logging.basicConfig(level=logging.INFO)
@@ -44,10 +44,7 @@ async def main():
     handle = Worker(
         client,
         task_queue="worker_specific_task_queue-distribution-queue",
-        workflows=[
-            DataPipelineWorkflowHappyPath, 
-            DataPipelineWorkflowScenarios
-        ],
+        workflows=[DataPipelineWorkflowHappyPath, DataPipelineWorkflowScenarios],
         activities=[select_task_queue, validate],
     )
     run_futures.append(handle.run())
@@ -58,10 +55,10 @@ async def main():
         client,
         task_queue=task_queue,
         activities=[
-            extract, 
-            transform, 
-            load, 
-            poll, 
+            extract,
+            transform,
+            load,
+            poll,
         ],
     )
     run_futures.append(handle.run())
