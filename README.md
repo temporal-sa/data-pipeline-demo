@@ -10,8 +10,8 @@ This demo illustrates how to build a data pipeline with Temporal using the Pytho
 | GitHub Actions     |    | Local Activity | ✅ | Long-Running        | ✅ |
 | Python 3.12        | ✅ | Timer          |    | Fanout              |    |
 | uv 0.4+            | ✅ | Signal         | ✅ | Continue As New     |    |
-| | ✅ | Query          | ✅ | Manual Intervention | ✅ |
-| |    | Heartbeat      | ✅ | Long-polling        |    |
+|                    |    | Query          | ✅ | Manual Intervention | ✅ |
+|                    |    | Heartbeat      | ✅ | Long-polling        |    |
 |                    |    | Update         |    | Polyglot            |    |
 |                    |    | Retry          | ✅ |                     |    |
 |                    |    | Data Converter | |                     |    |
@@ -79,8 +79,16 @@ This demo illustrates how to build a data pipeline with Temporal using the Pytho
    just ui
    ```
 
-7. **Access the demo**
-   - Web UI: [http://localhost:5000](http://localhost:5000)
+7. **Set up search attributes** (required for AdvancedVisibility scenario)
+   ```bash
+   just add-search-attribute
+   
+   # Or directly:
+   # temporal operator search-attribute create --name Step --type Keyword
+   ```
+
+8. **Access the demo**
+   - Web UI: [http://localhost:8080](http://localhost:8080)
    - Temporal Web UI: [http://localhost:8233](http://localhost:8233)
 
 ## Demo Scenarios
@@ -91,7 +99,7 @@ The web interface provides an intuitive way to demonstrate Temporal workflows to
 
 #### Basic Demo Flow
 
-1. **Navigate to the Web UI** at [http://localhost:5000](http://localhost:5000)
+1. **Navigate to the Web UI** at [http://localhost:8080](http://localhost:8080)
 
 2. **Submit a Job**
    - Select a scenario from the dropdown menu
@@ -111,44 +119,57 @@ The web interface provides an intuitive way to demonstrate Temporal workflows to
 #### Available Scenarios
 
 **HappyPath** - Standard successful workflow execution
-- Demonstrates basic ETL pipeline (Extract → Transform → Load)
-- Shows activity heartbeats and progress tracking
-- Good starting point for new audiences
+- **What happens:** Executes complete ETL pipeline (Validate → Extract → Transform → Load → Poll)
+- **Key features:** Activity heartbeats, progress tracking, distributed task queues
+- **Talking points:** "This shows the basic reliability of Temporal - even if workers crash, the workflow continues seamlessly"
+- **Best for:** First-time demos, establishing baseline understanding
 
 **AdvancedVisibility** - Custom search attributes and workflow metadata
-- Demonstrates search attribute updates during execution
-- Shows how to make workflows discoverable and queryable
-- Highlight business intelligence and monitoring capabilities
+- **What happens:** Same as HappyPath but updates custom "Step" search attribute at each phase
+- **Key features:** Dynamic search attributes, workflow discoverability, business intelligence
+- **Talking points:** "Watch how we can track exactly where each workflow is in real-time - perfect for dashboards and reporting"
+- **Demo tip:** Show Temporal Web UI search functionality with `Step:validation` queries
+- **Setup required:** Run `just add-search-attribute` before first use
 
 **HumanInLoopSignal** - Manual intervention using Signals
-- Workflow pauses and waits for external signal
-- Demonstrate sending signals via CLI or Web UI
-- Shows how to handle external dependencies and approvals
+- **What happens:** Workflow pauses after Load activity, waits for external signal to continue
+- **Key features:** Asynchronous signals, external system integration, timeout handling
+- **Talking points:** "This is how you handle approvals, external callbacks, or human decisions in your workflows"
+- **Demo interaction:** Use `just signal-workflow <JOB_ID>` or Web UI button during 60-second wait
+- **Timeout behavior:** Fails with "Load did not complete before timeout" if no signal received
 
 **HumanInLoopUpdate** - Manual intervention using Updates
-- Similar to Signal but with synchronous response
-- Show the difference between Signals (fire-and-forget) and Updates (request-response)
-- Demonstrate workflow interaction patterns
+- **What happens:** Similar to Signal but uses synchronous Update mechanism
+- **Key features:** Request-response pattern, immediate feedback, validation support
+- **Talking points:** "Unlike signals, updates are synchronous - you get immediate confirmation and can validate the request"
+- **Demo interaction:** Use Web UI update button to show immediate response
+- **Timeout behavior:** Fails with "Load did not complete before timeout" if no update received
 
-**Idempotency** - Duplicate activity execution
-- Shows how Temporal handles duplicate activities automatically
-- Demonstrate exactly-once execution guarantees
-- Important for data consistency discussions
+**Idempotency** - Duplicate activity execution testing
+- **What happens:** Executes Load activity twice to demonstrate idempotency guarantees
+- **Key features:** Activity idempotency, exactly-once semantics, duplicate detection
+- **Talking points:** "Notice how the Load activity runs twice but produces the same result - Temporal guarantees exactly-once execution"
+- **Demo tip:** Show activity history to highlight duplicate execution with same results
 
-**RecoverableFailure** - Transient error handling
-- Workflow encounters temporary failures and retries
-- Demonstrate automatic retry policies and exponential backoff
-- Show how workflows recover from infrastructure issues
+**RecoverableFailure** - Transient error handling and recovery
+- **What happens:** Workflow throws an exception mid-execution, triggering retry logic
+- **Key features:** Automatic retries, exponential backoff, workflow resilience
+- **Talking points:** "This simulates infrastructure failures - watch how Temporal automatically retries and recovers"
+- **Demo tip:** Show failed attempts in workflow history, then resume to demonstrate recovery
 
-**NonRecoverableFailure** - Permanent failure handling
-- Workflow fails due to business logic validation
-- Demonstrate how to handle permanent errors gracefully
-- Show workflow failure states and error propagation
+**NonRecoverableFailure** - Permanent business logic failure
+- **What happens:** Validation activity fails (input.validation set to "blue"), workflow terminates
+- **Key features:** Business rule enforcement, graceful failure handling, error propagation
+- **Talking points:** "Some failures shouldn't be retried - this shows how to handle permanent business logic failures"
+- **Demo tip:** Emphasize the difference between retryable infrastructure failures and non-retryable business failures
 
-**APIFailure** - External service failure simulation
-- Simulates external API unavailability
-- Demonstrate long-running retry strategies
-- Show how Temporal handles external service dependencies
+**APIFailure** - External service failure simulation with long-running retries
+- **What happens:** Poll activity fails 9 times before succeeding on attempt 10
+- **Key features:** Long-running retries, external service resilience, activity retry policies
+- **Talking points:** "This simulates external API downtime - Temporal keeps retrying until the service recovers"
+- **Demo tip:** Show the retry attempts building up in the activity history over time
+
+
 
 ### CLI Demo Path
 

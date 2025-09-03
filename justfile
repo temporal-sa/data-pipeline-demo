@@ -1,6 +1,10 @@
 # Temporal Data Pipeline Justfile
 # Comprehensive development and operational toolkit
 
+# Show available commands (default recipe)
+default:
+    @just --list
+
 # Code Quality & Development Recipes
 
 # Run ruff linting checks
@@ -42,6 +46,12 @@ temporal-start:
 temporal-stop:
     @echo "Stopping Temporal server..."
     @pkill -f "temporal server start-dev" || echo "No Temporal server process found"
+
+# Add search attribute for AdvancedVisibility scenario
+add-search-attribute:
+    @echo "Creating Step search attribute for AdvancedVisibility scenario..."
+    temporal operator search-attribute create --name Step --type Keyword
+    @echo "Search attribute created successfully!"
 
 # Application Services
 

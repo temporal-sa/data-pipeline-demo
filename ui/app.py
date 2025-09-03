@@ -71,7 +71,9 @@ async def run_job() -> str | tuple[str, int]:
             task_queue="worker_specific_task_queue-distribution-queue",
         )
 
-    return render_template("job_progress.html", selected_scenario=selected_scenario, job_id=job_id)
+    return render_template(
+        "job_progress.html", selected_scenario=selected_scenario, job_id=job_id
+    )
 
 
 @app.route("/confirmation")
@@ -159,4 +161,4 @@ async def update() -> Response:
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, port=8080)

@@ -3,3 +3,6 @@ __pycache__
 idempotent_keys.txt
 demodata/output/*
 commit-msg.md
+.claude/*
+.mypy_cache/*
+.ruff_cache/*
