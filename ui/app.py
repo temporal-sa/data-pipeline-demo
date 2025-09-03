@@ -1,6 +1,7 @@
 import uuid
 
 from flask import Flask, jsonify, render_template, request
+from flask.wrappers import Response
 
 from client import get_client
 from dataobjects import DataPipelineParams
@@ -28,16 +29,22 @@ data = {
 
 
 @app.route("/", methods=["GET", "POST"])
-async def main_order_page():
+async def main_order_page() -> str:
     job_id = str(uuid.uuid4().int)[:6]
 
     return render_template("index.html", data=data, scenarios=scenarios, job_id=job_id)
 
 
 @app.route("/run_job")
-async def run_job():
+async def run_job() -> str | tuple[str, int]:
     selected_scenario = request.args.get("scenario")
     job_id = request.args.get("job_id")
+
+    if not selected_scenario:
+        return "Error: scenario parameter is required", 400
+    if not job_id:
+        return "Error: job_id parameter is required", 400
+
     client = await get_client()
 
     input = DataPipelineParams(
@@ -68,8 +75,11 @@ async def run_job():
 
 
 @app.route("/confirmation")
-async def order_confirmation():
+async def order_confirmation() -> str | tuple[str, int]:
     job_id = request.args.get("job_id")
+
+    if not job_id:
+        return "Error: job_id parameter is required", 400
 
     client = await get_client()
     pipeline_workflow = client.get_workflow_handle(f"job-{job_id}")
@@ -79,8 +89,11 @@ async def order_confirmation():
 
 
 @app.route("/get_progress")
-async def get_progress():
+async def get_progress() -> Response | tuple[Response, int]:
     job_id = request.args.get("job_id")
+
+    if not job_id:
+        return jsonify({"error": "job_id parameter is required"}), 400
 
     progress_percent = 0
     try:
@@ -104,8 +117,11 @@ async def get_progress():
 
 
 @app.route("/signal", methods=["POST"])
-async def signal():
+async def signal() -> tuple[str, int] | tuple[Response, int]:
     job_id = request.args.get("job_id")
+
+    if not job_id:
+        return jsonify({"error": "job_id parameter is required"}), 400
 
     try:
         client = await get_client()
@@ -119,8 +135,11 @@ async def signal():
 
 
 @app.route("/update", methods=["POST"])
-async def update():
+async def update() -> Response:
     job_id = request.args.get("job_id")
+
+    if not job_id:
+        return jsonify({"error": "job_id parameter is required"})
 
     update_result = None
     try:
@@ -140,5 +159,4 @@ async def update():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
     app.run(debug=True)

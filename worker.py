@@ -16,7 +16,7 @@ from DataPipelineWorkflowScenarios import DataPipelineWorkflowScenarios
 interrupt_event = asyncio.Event()
 
 
-async def main():
+async def main() -> None:
     logging.basicConfig(level=logging.INFO)
 
     # Delete idempotent keys when worker starts

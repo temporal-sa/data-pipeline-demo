@@ -1,3 +1,5 @@
 .venv
 __pycache__
 idempotent_keys.txt
+demodata/output/*
+commit-msg.md

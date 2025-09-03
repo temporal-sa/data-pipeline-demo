@@ -1,5 +1,5 @@
 import asyncio
-from collections.abc import Sequence
+from typing import Sequence
 from datetime import timedelta
 from typing import Any
 
@@ -30,8 +30,8 @@ class DataPipelineWorkflowScenarios:
     IDEMPOTENCY = "DataPipelineIdempotency"
 
     def __init__(self) -> None:
-        self.load_complete_signal = False
-        self.load_complete_update = False
+        self.signal_received = False
+        self.update_received = False
         self._progress = 0
 
     @workflow.run
@@ -142,10 +142,10 @@ class DataPipelineWorkflowScenarios:
         # Human In the Loop (signal) scenario
         if self.SIGNAL == workflow_type:
             try:
-                await workflow.wait_condition(lambda: self.load_complete_signal, timeout=60)
+                await workflow.wait_condition(lambda: self.signal_received, timeout=60)
                 workflow.logger.info(
                     f"Received signal that load completed: {input.input_filename} "
-                    f"load complete: {self.load_complete_signal}"
+                    f"load complete: {self.signal_received}"
                 )
             except asyncio.TimeoutError as e:
                 # could return "Load did not complete before timeout."
@@ -154,10 +154,10 @@ class DataPipelineWorkflowScenarios:
         # Human In the Loop (update) scenario
         elif self.UPDATE == workflow_type:
             try:
-                await workflow.wait_condition(lambda: self.load_complete_update, timeout=60)
+                await workflow.wait_condition(lambda: self.update_received, timeout=60)
                 workflow.logger.info(
                     f"Received update that load completed: {input.input_filename} "
-                    f"load complete: {self.load_complete_update}"
+                    f"load complete: {self.update_received}"
                 )
             except asyncio.TimeoutError as e:
                 # could return "Load did not complete before timeout."
@@ -184,11 +184,11 @@ class DataPipelineWorkflowScenarios:
 
     @workflow.signal
     async def load_complete_signal(self, complete: str) -> None:
-        self.load_complete_signal = True
+        self.signal_received = True
 
     @workflow.update
-    async def load_complete_update(self, complete: str) -> None:
-        self.load_complete_update = True
+    async def load_complete_update(self, complete: str) -> str:
+        self.update_received = True
         return "Workflow update successful"
 
     @workflow.query
