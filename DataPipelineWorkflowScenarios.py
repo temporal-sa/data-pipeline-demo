@@ -1,6 +1,6 @@
 import asyncio
 from datetime import timedelta
-from typing import Any, Sequence
+from typing import Any, Sequence  # noqa: UP035 - Temporal dynamic workflows require typing.Sequence
 
 import temporalio
 from temporalio import workflow
@@ -35,9 +35,7 @@ class DataPipelineWorkflowScenarios:
 
     @workflow.run
     async def run(self, args: Sequence[RawValue]) -> Any:
-        input = workflow.payload_converter().from_payload(
-            args[0].payload, DataPipelineParams
-        )
+        input = workflow.payload_converter().from_payload(args[0].payload, DataPipelineParams)
         workflow_type = workflow.info().workflow_type
         workflow.logger.info("Dynamic Data Pipeline workflow started, " + workflow_type)
 
@@ -70,9 +68,7 @@ class DataPipelineWorkflowScenarios:
 
         if not validation:
             workflow.logger.info(f"Validation rejected for: {input.input_filename}")
-            raise ApplicationError(
-                "Workflow failed due to validation"
-            ) from CustomException("Validation Failed")
+            raise ApplicationError("Workflow failed due to validation") from CustomException("Validation Failed")
 
         # Set progress to 20%
         self._progress = 20
@@ -88,9 +84,7 @@ class DataPipelineWorkflowScenarios:
             start_to_close_timeout=timedelta(seconds=300),
             heartbeat_timeout=timedelta(seconds=20),
         )
-        workflow.logger.info(
-            f"Extract status: {input.input_filename}: {activity_output}"
-        )
+        workflow.logger.info(f"Extract status: {input.input_filename}: {activity_output}")
 
         # Set progress to 40%
         self._progress = 40
@@ -106,9 +100,7 @@ class DataPipelineWorkflowScenarios:
             start_to_close_timeout=timedelta(seconds=300),
             heartbeat_timeout=timedelta(seconds=20),
         )
-        workflow.logger.info(
-            f"Transform status: {input.input_filename}: {activity_output}"
-        )
+        workflow.logger.info(f"Transform status: {input.input_filename}: {activity_output}")
 
         # Non-Recoverable (bug) Scenario
         if self.BUG == workflow_type:
@@ -142,9 +134,7 @@ class DataPipelineWorkflowScenarios:
                 start_to_close_timeout=timedelta(seconds=300),
                 heartbeat_timeout=timedelta(seconds=20),
             )
-            workflow.logger.info(
-                f"Load status: {input.input_filename}: {activity_output}"
-            )
+            workflow.logger.info(f"Load status: {input.input_filename}: {activity_output}")
 
         # Set progress to 80%
         self._progress = 80
@@ -154,28 +144,22 @@ class DataPipelineWorkflowScenarios:
             try:
                 await workflow.wait_condition(lambda: self.signal_received, timeout=60)
                 workflow.logger.info(
-                    f"Received signal that load completed: {input.input_filename} "
-                    f"load complete: {self.signal_received}"
+                    f"Received signal that load completed: {input.input_filename} load complete: {self.signal_received}"
                 )
             except asyncio.TimeoutError as e:
                 # could return "Load did not complete before timeout."
-                raise temporalio.exceptions.ApplicationError(
-                    "Load did not complete before timeout"
-                ) from e
+                raise temporalio.exceptions.ApplicationError("Load did not complete before timeout") from e
 
         # Human In the Loop (update) scenario
         elif self.UPDATE == workflow_type:
             try:
                 await workflow.wait_condition(lambda: self.update_received, timeout=60)
                 workflow.logger.info(
-                    f"Received update that load completed: {input.input_filename} "
-                    f"load complete: {self.update_received}"
+                    f"Received update that load completed: {input.input_filename} load complete: {self.update_received}"
                 )
             except asyncio.TimeoutError as e:
                 # could return "Load did not complete before timeout."
-                raise temporalio.exceptions.ApplicationError(
-                    "Load did not complete before timeout"
-                ) from e
+                raise temporalio.exceptions.ApplicationError("Load did not complete before timeout") from e
         else:
             activity_output = await workflow.execute_activity(
                 poll,
@@ -183,13 +167,9 @@ class DataPipelineWorkflowScenarios:
                 task_queue=unique_worker_task_queue,
                 start_to_close_timeout=timedelta(seconds=3000),
                 heartbeat_timeout=timedelta(seconds=20),
-                retry_policy=RetryPolicy(
-                    initial_interval=timedelta(seconds=2), backoff_coefficient=1
-                ),
+                retry_policy=RetryPolicy(initial_interval=timedelta(seconds=2), backoff_coefficient=1),
             )
-            workflow.logger.info(
-                f"Poll status: {input.input_filename}: {activity_output}"
-            )
+            workflow.logger.info(f"Poll status: {input.input_filename}: {activity_output}")
 
         # Advanced Visibility scenario
         if self.VISIBILITY == workflow_type:

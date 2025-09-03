@@ -51,6 +51,13 @@ just signal-workflow <JOB_ID>
 
 # Get workflow status
 just workflow-status <JOB_ID>
+
+# Setup for AdvancedVisibility scenario
+just add-search-attribute
+
+# Clean up demo data
+just clean                   # Remove idempotent keys
+just reset                   # Stop services and clean up
 ```
 
 ## Architecture Overview
@@ -85,12 +92,13 @@ The `DataPipelineWorkflowScenarios` class uses `@workflow.defn(dynamic=True)` to
 
 **Scenario Routing:**
 Scenarios are determined by workflow type and include:
-- `DataPipelineAdvancedVisibility` - Custom search attributes
-- `DataPipelineHumanInLoopSignal` - Manual intervention via signals
-- `DataPipelineHumanInLoopUpdate` - Manual intervention via updates
+- `DataPipelineAdvancedVisibility` - Custom search attributes (requires `just add-search-attribute` setup)
+- `DataPipelineHumanInLoopSignal` - Manual intervention via signals (60s timeout)
+- `DataPipelineHumanInLoopUpdate` - Manual intervention via updates (60s timeout) 
 - `DataPipelineIdempotency` - Duplicate activity execution testing
 - `DataPipelineRecoverableFailure` - Exception handling and retry
 - `DataPipelineNonRecoverableFailure` - Validation failure scenarios
+- `DataPipelineAPIFailure` - External service failure simulation
 
 **Data Flow:**
 1. UI submits job → Distribution worker
@@ -109,8 +117,19 @@ Scenarios are determined by workflow type and include:
 - `TEMPORAL_MTLS_TLS_KEY` - Private key path
 - `ENCRYPT_PAYLOADS=true` - Optional payload encryption
 
+### Demo-Specific Considerations
+
+**UI Port:** Flask app runs on port 8080 (not 5000) to avoid macOS reserved port conflicts
+
+**Search Attributes:** AdvancedVisibility scenario requires the "Step" search attribute to be created before use
+
+**Idempotency Keys:** Stored in `idempotent_keys.txt` and cleaned up by `just clean`
+
+**Dynamic Workflow Import:** Must use `from typing import Sequence  # noqa: UP035` for Temporal compatibility (ignore linter suggestion to use collections.abc)
+
 ### File Structure
 
 - `/demodata/` - Data processing directories (source, working, output)
-- `dataobjects.py` - Data classes and exceptions
+- `dataobjects.py` - Data classes and exceptions  
 - `encryption_codec.py` - Optional payload encryption codec
+- `justfile` - Development commands (run `just` to see all available commands)

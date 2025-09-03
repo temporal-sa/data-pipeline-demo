@@ -100,7 +100,7 @@ workflow-status JOB_ID:
 # Clean up temporary files and idempotent keys
 clean:
     @echo "Cleaning up temporary files..."
-    @if [ -f "idempotent_keys.json" ]; then rm idempotent_keys.json && echo "Removed idempotent_keys.json"; fi
+    @if [ -f "idempotent_keys.txt" ]; then rm idempotent_keys.txt && echo "Removed idempotent_keys.txt"; fi
     @echo "Cleanup complete"
 
 # Stop all services and clean up
