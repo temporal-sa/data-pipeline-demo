@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+
+
 @dataclass
 class JobInput:
     JobId: str
@@ -7,4 +9,3 @@ class JobInput:
     Filename: str
     WorkDir: str
     OutputDir: str
-
